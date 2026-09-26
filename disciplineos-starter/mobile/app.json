@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "DisciplineOS",
+    "slug": "disciplineos",
+    "version": "1.0.0",
+    "scheme": "disciplineos",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.disciplineos.app"
+    },
+    "android": {
+      "package": "com.disciplineos.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#f3f7f2",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-web-browser"
+    ]
+  }
+}
