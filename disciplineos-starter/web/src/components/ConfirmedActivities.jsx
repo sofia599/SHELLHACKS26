@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { watchActivities } from "../firebase.js";
+import { recordActivityOutcome, watchActivities } from "../firebase.js";
 import { DIMENSIONS, localDateKey } from "../activityRules.js";
 import {
   connectGoogleCalendar,
@@ -38,6 +38,7 @@ export default function ConfirmedActivities() {
   const [googleConnected, setGoogleConnected] = useState(hasGoogleCalendarConnection());
   const [googleBusy, setGoogleBusy] = useState(false);
   const [googleError, setGoogleError] = useState("");
+  const [outcomeNotice, setOutcomeNotice] = useState("");
 
   useEffect(() => watchActivities((value) => setActivities(value ?? {})), []);
 
@@ -103,6 +104,13 @@ export default function ConfirmedActivities() {
     setGoogleError("");
   }
 
+  async function saveOutcome(activity, outcome) {
+    const result = await recordActivityOutcome(activity.id, outcome);
+    setOutcomeNotice(result.committed
+      ? `${activity.dimension} ${outcome === "completed" ? "+4" : "−3"} · score ${result.score}`
+      : "Outcome already recorded.");
+  }
+
   return (
     <section className="confirmed-calendar panel">
       <div className="calendar-heading main-calendar-heading">
@@ -165,17 +173,25 @@ export default function ConfirmedActivities() {
           <p className="agenda-empty">No events on this day.</p>
         ) : dayEvents.map((event) => {
           const dimension = DIMENSIONS.find((item) => item.key === event.dimension);
+          const localActivity = event.source !== "google" && event.id && activities[event.id];
           return (
             <article className="confirmed-activity" key={`${event.source || "local"}-${event.id}`}>
               <span className="activity-accent" style={{ background: dimension?.color || "#4285f4" }} />
               <div className="confirmed-activity-copy">
                 <strong>{event.title}</strong>
-                <span>{event.source === "google" ? "Google Calendar" : dimension?.label || "Confirmed activity"}{event.startTime ? ` · ${new Date(event.startTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : ""}</span>
+                <span>{localActivity?.outcome ? `${localActivity.outcome.status === "completed" ? "Completed" : "Not completed"} · ${localActivity.outcome.delta > 0 ? "+" : ""}${localActivity.outcome.delta} points` : event.source === "google" ? "Google Calendar" : dimension?.label || "Confirmed activity"}{event.startTime ? ` · ${new Date(event.startTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : ""}</span>
               </div>
               {event.htmlLink && <a className="calendar-open-link" href={event.htmlLink} target="_blank" rel="noreferrer" aria-label={`Open ${event.title} in Google Calendar`}>↗</a>}
+              {localActivity && !localActivity.outcome && selectedDate <= today && (
+                <div className="outcome-actions">
+                  <button className="outcome-complete" type="button" onClick={() => saveOutcome(localActivity, "completed")}>Done +4</button>
+                  <button className="outcome-missed" type="button" onClick={() => saveOutcome(localActivity, "missed")}>Missed −3</button>
+                </div>
+              )}
             </article>
           );
         })}
+        {outcomeNotice && <p className="outcome-notice" role="status">{outcomeNotice}</p>}
       </div>
     </section>
   );

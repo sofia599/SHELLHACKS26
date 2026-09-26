@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { confirmActivity, watchActivities } from "../firebase.js";
+import { confirmActivity, recordActivityOutcome, setDimensionPriority, watchActivities, watchDimensionPriorities } from "../firebase.js";
 import { DIMENSIONS, localDateKey } from "../activityRules.js";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -21,7 +21,7 @@ function formatDate(dateKey) {
   });
 }
 
-export default function DimensionCalendars() {
+export default function DimensionCalendars({ scores = {}, priorities: suppliedPriorities }) {
   const [dimensionKey, setDimensionKey] = useState(DIMENSIONS[0].key);
   const [month, setMonth] = useState(() => {
     const today = new Date();
@@ -29,8 +29,11 @@ export default function DimensionCalendars() {
   });
   const [selectedDate, setSelectedDate] = useState(localDateKey(new Date()));
   const [activities, setActivities] = useState({});
+  const [priorities, setPriorities] = useState(suppliedPriorities ?? {});
+  const [outcomeNotice, setOutcomeNotice] = useState("");
 
   useEffect(() => watchActivities((value) => setActivities(value ?? {})), []);
+  useEffect(() => watchDimensionPriorities(setPriorities), []);
 
   const dimension = DIMENSIONS.find((item) => item.key === dimensionKey);
   const monthActivities = useMemo(
@@ -49,13 +52,31 @@ export default function DimensionCalendars() {
     setSelectedDate(localDateKey(next));
   }
 
+  async function saveOutcome(activity, outcome) {
+    const result = await recordActivityOutcome(activity.id, outcome);
+    setOutcomeNotice(result.committed
+      ? `${dimension.label} ${outcome === "completed" ? "+4" : "−3"} points · now ${result.score}`
+      : "This activity already has an outcome recorded.");
+  }
+
   return (
     <section className="dimension-calendar-screen">
       <header className="screen-heading">
         <p className="eyebrow">Plan with intention</p>
         <h1>Dimension calendars</h1>
-        <p className="muted">Activities are suggested to a wellness area, then confirmed here before joining your main calendar.</p>
+        <p className="muted">Review plans, set focus priorities, and record outcomes to keep each score current.</p>
       </header>
+
+      <section className="priority-strip panel" aria-label="Wellness priorities">
+        <div><p className="eyebrow">FOCUS AREAS</p><p className="priority-explainer">Pinned dimensions are recommended first when plans overlap.</p></div>
+        <div className="priority-options">
+          {DIMENSIONS.map((item) => (
+            <button key={item.key} type="button" className={`priority-option${priorities[item.key] ? " is-prioritized" : ""}`} onClick={() => setDimensionPriority(item.key, !priorities[item.key])}>
+              <span aria-hidden="true">{priorities[item.key] ? "★" : "☆"}</span>{item.label}
+            </button>
+          ))}
+        </div>
+      </section>
 
       <div className="dimension-overview-grid">
         {DIMENSIONS.map((item) => {
@@ -71,7 +92,8 @@ export default function DimensionCalendars() {
             >
               <span className="dimension-dot" />
               <span>{item.label}</span>
-              <small>{count}</small>
+              <small>{Math.round(scores[item.key] ?? 50)}</small>
+              {priorities[item.key] && <span className="priority-star" aria-label="Prioritized">★</span>}
             </button>
           );
         })}
@@ -134,15 +156,21 @@ export default function DimensionCalendars() {
                   <span className="activity-accent" style={{ background: dimension.color }} />
                   <div className="confirmed-activity-copy">
                     <strong>{activity.title}</strong>
-                    <span>{activity.status === "confirmed" ? "Confirmed for main calendar" : "Pending confirmation"}</span>
+                    <span>{activity.outcome ? `${activity.outcome.status === "completed" ? "Completed" : "Not completed"} · ${activity.outcome.delta > 0 ? "+" : ""}${activity.outcome.delta} points` : activity.status === "confirmed" ? "Confirmed · record outcome to update score" : "Pending confirmation"}</span>
                   </div>
                   {activity.status !== "confirmed" ? (
                     <button className="primary confirm-activity" type="button" onClick={() => confirmActivity(activity.id)}>Confirm</button>
-                  ) : <span className="confirmed-check" aria-label="Confirmed">✓</span>}
+                  ) : activity.outcome ? <span className="confirmed-check" aria-label="Outcome recorded">✓</span> : selectedDate <= today ? (
+                    <div className="outcome-actions">
+                      <button className="outcome-complete" type="button" onClick={() => saveOutcome(activity, "completed")}>Done +4</button>
+                      <button className="outcome-missed" type="button" onClick={() => saveOutcome(activity, "missed")}>Missed −3</button>
+                    </div>
+                  ) : <span className="scheduled-label">Scheduled</span>}
                 </article>
               ))}
             </div>
           )}
+          {outcomeNotice && <p className="outcome-notice" role="status">{outcomeNotice}</p>}
         </section>
       </div>
     </section>

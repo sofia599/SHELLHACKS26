@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { watchDimensions } from "../firebase.js";
 
 const DIMENSION_META = [
-  { key: "physical", label: "Physical", color: "var(--physical)" },
-  { key: "emotional", label: "Emotional", color: "var(--emotional)" },
+  { key: "physical", label: "Physical health", color: "var(--physical)" },
+  { key: "emotional", label: "Mental health", color: "var(--emotional)" },
   { key: "social", label: "Social", color: "var(--social)" },
   { key: "financial", label: "Financial", color: "var(--financial)" },
   { key: "intellectual", label: "Intellectual", color: "var(--intellectual)" },
@@ -11,12 +11,12 @@ const DIMENSION_META = [
 ];
 
 const DEFAULTS = {
-  physical: 70,
-  emotional: 60,
-  social: 65,
-  financial: 55,
-  intellectual: 75,
-  occupational: 70,
+  physical: 50,
+  emotional: 50,
+  social: 50,
+  financial: 50,
+  intellectual: 50,
+  occupational: 50,
 };
 
 const CX = 260,

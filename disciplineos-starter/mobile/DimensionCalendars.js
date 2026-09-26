@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { confirmActivity, watchActivities } from './firebase.js';
+import { confirmActivity, recordActivityOutcome, setDimensionPriority, watchActivities, watchDimensionPriorities } from './firebase.js';
 import { DIMENSIONS, localDateKey } from './activityRules.js';
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -14,7 +14,7 @@ function monthDays(year, month) {
   return days;
 }
 
-export default function DimensionCalendars({ styles }) {
+export default function DimensionCalendars({ styles, scores = {}, priorities: incomingPriorities }) {
   const [dimensionKey, setDimensionKey] = useState(DIMENSIONS[0].key);
   const [month, setMonth] = useState(() => {
     const today = new Date();
@@ -22,8 +22,11 @@ export default function DimensionCalendars({ styles }) {
   });
   const [selectedDate, setSelectedDate] = useState(() => localDateKey(new Date()));
   const [activities, setActivities] = useState({});
+  const [priorities, setPriorities] = useState(incomingPriorities ?? {});
+  const [outcomeNotice, setOutcomeNotice] = useState('');
 
   useEffect(() => watchActivities((value) => setActivities(value ?? {})), []);
+  useEffect(() => watchDimensionPriorities(setPriorities), []);
 
   const dimension = DIMENSIONS.find((item) => item.key === dimensionKey);
   const monthPrefix = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
@@ -38,11 +41,18 @@ export default function DimensionCalendars({ styles }) {
     setSelectedDate(localDateKey(next));
   }
 
+  async function saveOutcome(activity, outcome) {
+    const result = await recordActivityOutcome(activity.id, outcome);
+    setOutcomeNotice(result.committed
+      ? `${dimension.label} ${outcome === 'completed' ? '+4' : '−3'} · score ${result.score}`
+      : 'Outcome already recorded.');
+  }
+
   return (
     <View style={styles.screenSection}>
       <Text style={styles.kicker}>PLAN WITH INTENTION</Text>
       <Text style={styles.pageTitle}>Dimension calendars</Text>
-      <Text style={styles.pageSubtitle}>Review each area, then confirm plans for your main calendar.</Text>
+      <Text style={styles.pageSubtitle}>Review plans, set focus areas, and record what happened.</Text>
 
       <View style={styles.dimensionGrid}>
         {DIMENSIONS.map((item) => {
@@ -55,10 +65,23 @@ export default function DimensionCalendars({ styles }) {
             >
               <View style={[styles.dimensionDot, { backgroundColor: item.color }]} />
               <Text style={styles.dimensionText}>{item.label}</Text>
-              <Text style={styles.dimensionCount}>{count}</Text>
+              <Text style={styles.dimensionCount}>{Math.round(scores[item.key] ?? 50)}</Text>
+              {priorities[item.key] && <Text style={styles.priorityStar}>★</Text>}
             </Pressable>
           );
         })}
+      </View>
+
+      <View style={styles.priorityCard}>
+        <Text style={styles.priorityHeading}>Focus priority</Text>
+        <Text style={styles.priorityHelp}>Pinned areas are recommended first when plans overlap.</Text>
+        <View style={styles.priorityChips}>
+          {DIMENSIONS.map((item) => (
+            <Pressable key={item.key} onPress={() => setDimensionPriority(item.key, !priorities[item.key])} style={[styles.priorityChip, priorities[item.key] && { borderColor: item.color, backgroundColor: `${item.color}16` }]}>
+              <Text style={[styles.priorityChipText, priorities[item.key] && { color: item.color }]}>{priorities[item.key] ? '★' : '☆'} {item.label}</Text>
+            </Pressable>
+          ))}
+        </View>
       </View>
 
       <View style={styles.calendarCard}>
@@ -103,15 +126,21 @@ export default function DimensionCalendars({ styles }) {
             <View style={[styles.activityAccent, { backgroundColor: dimension.color }]} />
             <View style={styles.activityCopy}>
               <Text style={styles.activityTitle}>{activity.title}</Text>
-              <Text style={styles.activityMeta}>{activity.status === 'confirmed' ? 'Confirmed for main calendar' : 'Pending confirmation'}</Text>
+              <Text style={styles.activityMeta}>{activity.outcome ? `${activity.outcome.status === 'completed' ? 'Completed' : 'Not completed'} · ${activity.outcome.delta > 0 ? '+' : ''}${activity.outcome.delta} points` : activity.status === 'confirmed' ? 'Confirmed · record outcome to update score' : 'Pending confirmation'}</Text>
             </View>
             {activity.status === 'confirmed' ? (
-              <Text style={styles.confirmedMark}>✓</Text>
+              activity.outcome ? <Text style={styles.confirmedMark}>✓</Text> : selectedDate <= localDateKey(new Date()) ? (
+                <View style={styles.outcomeActions}>
+                  <Pressable onPress={() => saveOutcome(activity, 'completed')} style={styles.outcomeDone}><Text style={styles.outcomeButtonText}>Done +4</Text></Pressable>
+                  <Pressable onPress={() => saveOutcome(activity, 'missed')} style={styles.outcomeMissed}><Text style={styles.outcomeButtonText}>Missed −3</Text></Pressable>
+                </View>
+              ) : <Text style={styles.pendingNote}>Scheduled</Text>
             ) : (
               <Pressable onPress={() => confirmActivity(activity.id)} style={styles.confirmButton}><Text style={styles.confirmButtonText}>Confirm</Text></Pressable>
             )}
           </View>
         ))}
+        {!!outcomeNotice && <Text style={styles.outcomeNotice}>{outcomeNotice}</Text>}
       </View>
     </View>
   );

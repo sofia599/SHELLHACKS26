@@ -1,13 +1,18 @@
 import { useEffect, useState } from "react";
-import { addActivity } from "../firebase.js";
+import { addActivity, watchActivities } from "../firebase.js";
 import { DIMENSIONS, localDateKey, suggestDimension } from "../activityRules.js";
+import { recommendDimension } from "../wellnessModel.js";
 
-export default function ActivityComposer() {
+export default function ActivityComposer({ scores = {}, priorities = {} }) {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState(localDateKey(new Date()));
   const [dimension, setDimension] = useState(null);
   const [saved, setSaved] = useState(false);
+  const [activities, setActivities] = useState({});
+  const [conflict, setConflict] = useState(null);
   const suggestion = suggestDimension(title);
+
+  useEffect(() => watchActivities((value) => setActivities(value ?? {})), []);
 
   useEffect(() => {
     setDimension(suggestion);
@@ -16,17 +21,31 @@ export default function ActivityComposer() {
   async function submit(event) {
     event.preventDefault();
     if (!title.trim() || !dimension) return;
+    const overlaps = Object.values(activities).filter((activity) => activity.date === date && activity.dimension !== dimension && activity.status !== "cancelled");
+    if (overlaps.length) {
+      const candidates = [...new Set([dimension, ...overlaps.map((activity) => activity.dimension)])];
+      setConflict({ candidates, overlaps });
+      return;
+    }
+    await addInDimension(dimension);
+  }
+
+  async function addInDimension(targetDimension) {
     await addActivity({
       title: title.trim(),
       date,
-      dimension,
+      dimension: targetDimension,
       status: "pending",
       createdAt: Date.now(),
     });
     setTitle("");
+    setDimension(null);
+    setConflict(null);
     setSaved(true);
     window.setTimeout(() => setSaved(false), 2400);
   }
+
+  const recommended = conflict ? recommendDimension(scores, priorities, conflict.candidates) : null;
 
   return (
     <section className="activity-composer panel">
@@ -73,6 +92,23 @@ export default function ActivityComposer() {
           </button>
         </div>
       </form>
+      {conflict && (
+        <div className="conflict-backdrop" role="presentation">
+          <section className="conflict-dialog" role="dialog" aria-modal="true" aria-labelledby="conflict-title">
+            <p className="eyebrow">SCHEDULE OVERLAP</p>
+            <h2 id="conflict-title">You already have a plan on this day.</h2>
+            <p className="muted">Your current wellbeing and pinned priorities suggest focusing on <strong>{DIMENSIONS.find((item) => item.key === recommended)?.label}</strong>.</p>
+            <div className="conflict-existing-list">
+              {conflict.overlaps.map((activity) => <span key={activity.id}>{activity.title} · {DIMENSIONS.find((item) => item.key === activity.dimension)?.label}</span>)}
+            </div>
+            <div className="conflict-actions">
+              <button type="button" onClick={() => setConflict(null)}>Cancel</button>
+              {recommended !== dimension && <button className="primary" type="button" onClick={() => addInDimension(recommended)}>Use suggestion</button>}
+              <button type="button" onClick={() => addInDimension(dimension)}>Keep {DIMENSIONS.find((item) => item.key === dimension)?.label}</button>
+            </div>
+          </section>
+        </div>
+      )}
     </section>
   );
 }

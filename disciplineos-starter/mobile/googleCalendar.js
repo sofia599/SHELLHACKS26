@@ -38,6 +38,7 @@ export async function fetchGoogleEvents(accessToken, startDate, endDate) {
       date: getEventDate(event),
       dimension: event.extendedProperties?.private?.disciplineOsDimension || null,
       disciplineOsActivityId: event.extendedProperties?.private?.disciplineOsActivityId || null,
+      source: 'google',
       htmlLink: event.htmlLink,
       startTime: event.start?.dateTime || null,
     }));

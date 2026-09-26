@@ -13,12 +13,15 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
-import { logJournalEntry, watchDimensions } from './firebase.js';
+import { logJournalEntry, watchAssessments, watchDimensionPriorities, watchDimensions, watchScoreHistory } from './firebase.js';
 import ActivityComposer from './ActivityComposer.js';
 import ConfirmedActivities from './ConfirmedActivities.js';
 import DimensionCalendars from './DimensionCalendars.js';
+import DimensionsHub from './DimensionsHub.js';
+import EmailInbox from './EmailInbox.js';
 import WellnessHexagon from './WellnessHexagon.js';
-import { DIMENSIONS } from './activityRules.js';
+import WellnessMark from './WellnessMark.js';
+import { DIMENSIONS } from './wellnessModel.js';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -29,10 +32,10 @@ const GOOGLE_CLIENT_IDS = {
   ios: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
 };
 
-function NavButton({ label, symbol, selected, onPress, styles: navStyles }) {
+function NavButton({ label, symbol, selected, onPress, styles: navStyles, wellnessIcon = false }) {
   return (
     <Pressable onPress={onPress} style={[navStyles.navButton, selected && navStyles.navButtonSelected]}>
-      <Text style={[navStyles.navSymbol, selected && navStyles.navTextSelected]}>{symbol}</Text>
+      {wellnessIcon ? <WellnessMark size={20} /> : <Text style={[navStyles.navSymbol, selected && navStyles.navTextSelected]}>{symbol}</Text>}
       <Text style={[navStyles.navLabel, selected && navStyles.navTextSelected]}>{label}</Text>
     </Pressable>
   );
@@ -43,7 +46,12 @@ export default function App() {
   const [appearance, setAppearance] = useState('bright');
   const [appearanceReady, setAppearanceReady] = useState(false);
   const [scores, setScores] = useState(DEFAULT_SCORES);
+  const [priorities, setPriorities] = useState({});
+  const [scoreHistory, setScoreHistory] = useState([]);
+  const [assessments, setAssessments] = useState({});
+  const [dimensionsInitialView, setDimensionsInitialView] = useState('calendars');
   const [googleToken, setGoogleToken] = useState(null);
+  const [gmailToken, setGmailToken] = useState(null);
   const [journalText, setJournalText] = useState('');
   const [journalSaved, setJournalSaved] = useState(false);
   const [googleRequest, googleResponse, promptGoogleAuth] = Google.useAuthRequest({
@@ -51,6 +59,12 @@ export default function App() {
     androidClientId: GOOGLE_CLIENT_IDS.android || 'preview-disabled.apps.googleusercontent.com',
     iosClientId: GOOGLE_CLIENT_IDS.ios || 'preview-disabled.apps.googleusercontent.com',
     scopes: ['https://www.googleapis.com/auth/calendar.events'],
+  });
+  const [gmailRequest, gmailResponse, promptGmailAuth] = Google.useAuthRequest({
+    webClientId: GOOGLE_CLIENT_IDS.web || 'preview-disabled.apps.googleusercontent.com',
+    androidClientId: GOOGLE_CLIENT_IDS.android || 'preview-disabled.apps.googleusercontent.com',
+    iosClientId: GOOGLE_CLIENT_IDS.ios || 'preview-disabled.apps.googleusercontent.com',
+    scopes: ['https://www.googleapis.com/auth/gmail.readonly'],
   });
 
   const overallScore = useMemo(() => Math.round(Object.values(scores).reduce((sum, score) => sum + score, 0) / DIMENSIONS.length), [scores]);
@@ -64,6 +78,9 @@ export default function App() {
     : styles;
 
   useEffect(() => watchDimensions((remote) => remote && setScores((current) => ({ ...current, ...remote }))), []);
+  useEffect(() => watchDimensionPriorities(setPriorities), []);
+  useEffect(() => watchScoreHistory((history) => setScoreHistory(Object.values(history ?? {}).sort((left, right) => (right.createdAt ?? 0) - (left.createdAt ?? 0)))), []);
+  useEffect(() => watchAssessments(setAssessments), []);
   useEffect(() => {
     AsyncStorage.getItem('disciplineos-appearance')
       .then((saved) => saved && setAppearance(saved))
@@ -76,6 +93,10 @@ export default function App() {
     if (googleResponse?.type !== 'success') return;
     setGoogleToken(googleResponse.authentication?.accessToken ?? googleResponse.params?.access_token ?? null);
   }, [googleResponse]);
+  useEffect(() => {
+    if (gmailResponse?.type !== 'success') return;
+    setGmailToken(gmailResponse.authentication?.accessToken ?? gmailResponse.params?.access_token ?? null);
+  }, [gmailResponse]);
 
   async function saveJournal() {
     const note = journalText.trim();
@@ -86,13 +107,18 @@ export default function App() {
     setTimeout(() => setJournalSaved(false), 2500);
   }
 
+  function openAssessment() {
+    setDimensionsInitialView('assessment');
+    setScreen('dimensions');
+  }
+
   return (
     <SafeAreaView style={screenStyles.safeArea}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? '#111a28' : '#f5f7fb'} />
       <View style={screenStyles.appContainer}>
         <ScrollView contentContainerStyle={screenStyles.page} showsVerticalScrollIndicator={false}>
           <View style={screenStyles.topline}>
-            <View style={screenStyles.brandMark}><Text style={screenStyles.brandMarkText}>D</Text></View>
+            <WellnessMark size={30} />
             <Text style={screenStyles.brand}>DISCIPLINEOS</Text>
             <View style={screenStyles.liveTag}><View style={screenStyles.liveDot} /><Text style={screenStyles.liveText}>YOUR DAILY RESET</Text></View>
           </View>
@@ -104,12 +130,20 @@ export default function App() {
                 <Text style={screenStyles.dateLabel}>{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
               </View>
 
+              {DIMENSIONS.some(({ key }) => !assessments[key]?.completedAt) && (
+                <Pressable onPress={openAssessment} style={screenStyles.assessmentBanner}>
+                  <View style={screenStyles.assessmentBannerMark}><Text style={screenStyles.assessmentBannerIcon}>✦</Text></View>
+                  <View style={screenStyles.assessmentBannerCopy}><Text style={screenStyles.assessmentBannerTitle}>Set your wellness baseline</Text><Text style={screenStyles.assessmentBannerSubtitle}>24 prompts · 4 per area</Text></View>
+                  <Text style={screenStyles.assessmentBannerArrow}>›</Text>
+                </Pressable>
+              )}
+
               <View style={screenStyles.wellnessHeading}>
                 <View><Text style={screenStyles.kicker}>YOUR SIX DIMENSIONS</Text><Text style={screenStyles.sectionTitle}>Wellness shape</Text></View>
                 <View style={screenStyles.overallBadge}><Text style={screenStyles.overallScore}>{overallScore}</Text><Text style={screenStyles.overallLabel}>OVERALL</Text></View>
               </View>
               <WellnessHexagon dimensions={DIMENSIONS} scores={scores} dark={isDark} />
-              <ActivityComposer styles={screenStyles} dark={isDark} />
+              <ActivityComposer styles={screenStyles} dark={isDark} scores={scores} priorities={priorities} />
               <ConfirmedActivities
                 styles={screenStyles}
                 googleToken={googleToken}
@@ -121,7 +155,9 @@ export default function App() {
             </>
           )}
 
-          {screen === 'calendars' && <DimensionCalendars styles={screenStyles} googleToken={googleToken} />}
+          {screen === 'dimensions' && <DimensionsHub styles={screenStyles} scores={scores} priorities={priorities} initialView={dimensionsInitialView} />}
+
+          {screen === 'emails' && <EmailInbox styles={screenStyles} token={gmailToken} configured={Boolean(GOOGLE_CLIENT_IDS[Platform.OS])} onConnect={promptGmailAuth} onDisconnect={() => setGmailToken(null)} />}
 
           {screen === 'profile' && (
             <View style={screenStyles.screenSection}>
@@ -143,6 +179,24 @@ export default function App() {
                   <Pressable accessibilityRole="radio" accessibilityState={{ checked: isDark }} onPress={() => setAppearance('dark')} style={[screenStyles.appearanceOption, isDark && screenStyles.appearanceOptionSelected]}><Text style={screenStyles.appearanceOptionText}>☾ Dark</Text></Pressable>
                 </View>
               </View>
+              <View style={screenStyles.scoreHistoryCard}>
+                <Text style={screenStyles.kicker}>SCORE HISTORY</Text>
+                {scoreHistory.length === 0 ? (
+                  <Text style={screenStyles.profileSubtitle}>Complete an assessment or record an activity outcome to begin tracking changes.</Text>
+                ) : scoreHistory.slice(0, 8).map((entry, index) => {
+                  const dimension = DIMENSIONS.find((item) => item.key === entry.dimension);
+                  return (
+                    <View key={entry.id || `${entry.createdAt}-${index}`} style={screenStyles.scoreHistoryRow}>
+                      <View style={[screenStyles.dimensionDot, { backgroundColor: dimension?.color || '#426ee5' }]} />
+                      <View style={screenStyles.scoreHistoryCopy}>
+                        <Text style={screenStyles.scoreHistoryTitle}>{dimension?.label || entry.dimension} · {entry.reason}</Text>
+                        <Text style={screenStyles.profileSubtitle}>{new Date(entry.createdAt).toLocaleDateString()}</Text>
+                      </View>
+                      <Text style={[screenStyles.scoreHistoryDelta, { color: entry.delta >= 0 ? '#2c9877' : '#c85f82' }]}>{entry.delta > 0 ? '+' : ''}{entry.delta}</Text>
+                    </View>
+                  );
+                })}
+              </View>
               <View style={screenStyles.journalCard}>
                 <View style={screenStyles.cardHeading}><View><Text style={screenStyles.kicker}>A MOMENT FOR YOU</Text><Text style={screenStyles.sectionTitle}>Quick journal</Text></View><Text style={screenStyles.journalGlyph}>✎</Text></View>
                 <TextInput value={journalText} onChangeText={setJournalText} placeholder="What is on your mind today?" placeholderTextColor={isDark ? '#a6b3c8' : '#6e7b91'} multiline textAlignVertical="top" style={screenStyles.journalInput} />
@@ -156,7 +210,8 @@ export default function App() {
 
         <View style={screenStyles.bottomNav}>
           <NavButton styles={screenStyles} label="Home" symbol="⌂" selected={screen === 'home'} onPress={() => setScreen('home')} />
-          <NavButton styles={screenStyles} label="Calendars" symbol="▦" selected={screen === 'calendars'} onPress={() => setScreen('calendars')} />
+          <NavButton styles={screenStyles} label="Dimensions" symbol="" wellnessIcon selected={screen === 'dimensions'} onPress={() => setScreen('dimensions')} />
+          <NavButton styles={screenStyles} label="Email" symbol="✉" selected={screen === 'emails'} onPress={() => setScreen('emails')} />
           <NavButton styles={screenStyles} label="Profile" symbol="◉" selected={screen === 'profile'} onPress={() => setScreen('profile')} />
         </View>
       </View>
@@ -273,6 +328,152 @@ const styles = StyleSheet.create({
   appearanceOption: { paddingHorizontal: 10, paddingVertical: 8, borderRadius: 7 },
   appearanceOptionSelected: { backgroundColor: '#dfe8ff' },
   appearanceOptionText: { color: '#526079', fontSize: 10, fontWeight: '800' },
+  assessmentBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderWidth: 1, borderColor: '#d6e2f8', borderRadius: 9, backgroundColor: '#edf3ff' },
+  assessmentBannerMark: { width: 31, height: 31, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: '#dce7ff' },
+  assessmentBannerIcon: { color: '#426ee5', fontSize: 16, fontWeight: '900' },
+  assessmentBannerCopy: { flex: 1, gap: 2 },
+  assessmentBannerTitle: { color: '#263d67', fontSize: 11, fontWeight: '800' },
+  assessmentBannerSubtitle: { color: '#657895', fontSize: 9 },
+  assessmentBannerArrow: { color: '#426ee5', fontSize: 19 },
+  dimensionHubTabs: { flexDirection: 'row', gap: 4, padding: 4, borderRadius: 8, backgroundColor: '#eaf0fa', marginBottom: 8 },
+  dimensionHubTab: { flex: 1, alignItems: 'center', paddingVertical: 9, borderRadius: 6 },
+  dimensionHubTabSelected: { backgroundColor: '#fff', elevation: 1 },
+  dimensionHubTabText: { color: '#6e7b91', fontSize: 10, fontWeight: '700' },
+  dimensionHubTabTextSelected: { color: '#3459b5' },
+  priorityCard: { gap: 7, padding: 12, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e0e6ef', borderRadius: 8 },
+  priorityHeading: { color: '#202a3b', fontSize: 11, fontWeight: '800' },
+  priorityHelp: { color: '#6e7b91', fontSize: 9 },
+  priorityChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
+  priorityChip: { paddingHorizontal: 8, paddingVertical: 6, borderWidth: 1, borderColor: '#e0e6ef', borderRadius: 16 },
+  priorityChipText: { color: '#526079', fontSize: 8, fontWeight: '700' },
+  priorityStar: { color: '#bd8b20', fontSize: 10 },
+  outcomeActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+  outcomeDone: { paddingHorizontal: 7, paddingVertical: 6, borderRadius: 6, backgroundColor: '#e5f4ed' },
+  outcomeMissed: { paddingHorizontal: 7, paddingVertical: 6, borderRadius: 6, backgroundColor: '#fff0ed' },
+  outcomeButtonText: { color: '#344258', fontSize: 8, fontWeight: '800' },
+  outcomeNotice: { color: '#426ee5', fontSize: 10, fontWeight: '700', marginTop: 6 },
+  scheduledLabel: { color: '#6e7b91', fontSize: 8 },
+  assessmentProgressCard: { padding: 12, borderWidth: 1, borderColor: '#e0e6ef', borderRadius: 8, backgroundColor: '#fff', gap: 8 },
+  assessmentProgressTitle: { color: '#202a3b', fontSize: 10, fontWeight: '800' },
+  assessmentTrack: { height: 6, backgroundColor: '#e8edf5', borderRadius: 4, overflow: 'hidden' },
+  assessmentTrackFill: { height: '100%', backgroundColor: '#426ee5', borderRadius: 4 },
+  assessmentDimensionList: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
+  assessmentDimensionButton: { flexDirection: 'row', alignItems: 'center', gap: 5, width: '48%', padding: 8, borderWidth: 1, borderColor: '#e0e6ef', borderRadius: 7, backgroundColor: '#fff' },
+  assessmentDimensionText: { flex: 1, color: '#344258', fontSize: 9, fontWeight: '700' },
+  assessmentDimensionScore: { color: '#344258', fontSize: 9, fontWeight: '800' },
+  assessmentCheck: { color: '#2c9877', fontSize: 10, fontWeight: '900' },
+  assessmentCard: { marginTop: 4, padding: 13, gap: 12, borderWidth: 1, borderColor: '#e0e6ef', borderRadius: 8, backgroundColor: '#fff' },
+  assessmentCardHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#e9edf4' },
+  assessmentScore: { fontSize: 25, fontWeight: '900' },
+  assessmentQuestion: { gap: 8, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#edf0f5' },
+  assessmentQuestionText: { color: '#28364b', fontSize: 10, lineHeight: 15, fontWeight: '700' },
+  questionNumber: { color: '#426ee5', fontWeight: '900' },
+  assessmentAnswers: { flexDirection: 'row', justifyContent: 'space-between', gap: 5 },
+  assessmentAnswer: { flex: 1, minHeight: 34, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#dfe5ef', borderRadius: 6, backgroundColor: '#f8f9fc' },
+  assessmentAnswerSelected: { backgroundColor: '#426ee5', borderColor: '#426ee5' },
+  assessmentAnswerText: { color: '#526079', fontSize: 10, fontWeight: '800' },
+  assessmentAnswerTextSelected: { color: '#fff' },
+  assessmentScaleLabels: { flexDirection: 'row', justifyContent: 'space-between' },
+  assessmentScaleText: { color: '#7b8799', fontSize: 7, fontWeight: '800' },
+  assessmentSaveRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingTop: 2 },
+  assessmentNotice: { flex: 1, color: '#6e7b91', fontSize: 8 },
+  assessmentMethod: { color: '#6e7b91', fontSize: 9, lineHeight: 14 },
+  emailPanel: { padding: 13, borderWidth: 1, borderColor: '#e0e6ef', borderRadius: 9, backgroundColor: '#fff', gap: 8 },
+  emailHeader: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#e9edf4' },
+  emailLogo: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#eaf0ff' },
+  emailLogoText: { color: '#426ee5', fontWeight: '900', fontSize: 15 },
+  emailHeaderCopy: { flex: 1 },
+  emailHeaderTitle: { color: '#202a3b', fontSize: 11, fontWeight: '800' },
+  emailButton: { paddingHorizontal: 9, paddingVertical: 7, borderRadius: 7, backgroundColor: '#426ee5' },
+  emailButtonText: { color: '#fff', fontSize: 8, fontWeight: '800' },
+  emailRow: { flexDirection: 'row', gap: 8, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: '#edf0f5' },
+  emailRowUnread: { backgroundColor: '#f6f8fd' },
+  emailUnreadDot: { width: 6, height: 6, marginTop: 4, borderRadius: 4, backgroundColor: '#426ee5' },
+  emailMessageCopy: { flex: 1, gap: 3 },
+  emailMessageTop: { flexDirection: 'row', justifyContent: 'space-between', gap: 6 },
+  emailSender: { flex: 1, color: '#344258', fontSize: 9, fontWeight: '800' },
+  emailDate: { color: '#7b8799', fontSize: 8 },
+  emailSubject: { color: '#202a3b', fontSize: 9, fontWeight: '700' },
+  emailSnippet: { color: '#6e7b91', fontSize: 8, lineHeight: 12 },
+  emailPrivacy: { color: '#6e7b91', fontSize: 8, lineHeight: 12, paddingTop: 5 },
+  scoreHistoryCard: { padding: 13, borderWidth: 1, borderColor: '#e0e6ef', borderRadius: 8, backgroundColor: '#fff', gap: 8 },
+  scoreHistoryRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 7, borderTopWidth: 1, borderTopColor: '#edf0f5' },
+  scoreHistoryCopy: { flex: 1, gap: 2 },
+  scoreHistoryTitle: { color: '#344258', fontSize: 9, fontWeight: '700' },
+  scoreHistoryDelta: { fontSize: 11, fontWeight: '900' },
+  assessmentBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderWidth: 1, borderColor: '#d6e2f8', borderRadius: 9, backgroundColor: '#edf3ff' },
+  assessmentBannerMark: { width: 31, height: 31, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: '#dce7ff' },
+  assessmentBannerIcon: { color: '#426ee5', fontSize: 16, fontWeight: '900' },
+  assessmentBannerCopy: { flex: 1, gap: 2 },
+  assessmentBannerTitle: { color: '#263d67', fontSize: 11, fontWeight: '800' },
+  assessmentBannerSubtitle: { color: '#657895', fontSize: 9 },
+  assessmentBannerArrow: { color: '#426ee5', fontSize: 19 },
+  dimensionHubTabs: { flexDirection: 'row', gap: 4, padding: 4, borderRadius: 9, backgroundColor: '#eaf0fa', marginBottom: 9 },
+  dimensionHubTab: { flex: 1, alignItems: 'center', paddingVertical: 9, borderRadius: 7 },
+  dimensionHubTabSelected: { backgroundColor: '#fff', shadowColor: '#344b71', shadowOpacity: 0.1, shadowRadius: 4, elevation: 1 },
+  dimensionHubTabText: { color: '#6e7b91', fontSize: 10, fontWeight: '700' },
+  dimensionHubTabTextSelected: { color: '#3459b5' },
+  priorityCard: { gap: 7, padding: 12, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e0e6ef', borderRadius: 9 },
+  priorityHeading: { color: '#202a3b', fontSize: 11, fontWeight: '800' },
+  priorityHelp: { color: '#6e7b91', fontSize: 9 },
+  priorityChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
+  priorityChip: { paddingHorizontal: 8, paddingVertical: 6, borderWidth: 1, borderColor: '#e0e6ef', borderRadius: 16 },
+  priorityChipText: { color: '#526079', fontSize: 8, fontWeight: '700' },
+  priorityStar: { color: '#c29432', fontSize: 10 },
+  outcomeActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+  outcomeDone: { paddingHorizontal: 7, paddingVertical: 6, borderRadius: 7, backgroundColor: '#e5f4ed' },
+  outcomeMissed: { paddingHorizontal: 7, paddingVertical: 6, borderRadius: 7, backgroundColor: '#fff0ed' },
+  outcomeButtonText: { color: '#344258', fontSize: 8, fontWeight: '800' },
+  outcomeNotice: { color: '#426ee5', fontSize: 10, fontWeight: '700', marginTop: 6 },
+  scheduledLabel: { color: '#6e7b91', fontSize: 8 },
+  assessmentProgressCard: { padding: 12, borderWidth: 1, borderColor: '#e0e6ef', borderRadius: 9, backgroundColor: '#fff', gap: 8 },
+  assessmentProgressTitle: { color: '#202a3b', fontSize: 10, fontWeight: '800' },
+  assessmentTrack: { height: 6, backgroundColor: '#e8edf5', borderRadius: 4, overflow: 'hidden' },
+  assessmentTrackFill: { height: '100%', backgroundColor: '#426ee5', borderRadius: 4 },
+  assessmentDimensionList: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
+  assessmentDimensionButton: { flexDirection: 'row', alignItems: 'center', gap: 5, width: '48%', padding: 8, borderWidth: 1, borderColor: '#e0e6ef', borderRadius: 8, backgroundColor: '#fff' },
+  assessmentDimensionText: { flex: 1, color: '#344258', fontSize: 9, fontWeight: '700' },
+  assessmentDimensionScore: { color: '#344258', fontSize: 9, fontWeight: '800' },
+  assessmentCheck: { color: '#2c9877', fontSize: 10, fontWeight: '900' },
+  assessmentCard: { marginTop: 4, padding: 13, gap: 12, borderWidth: 1, borderColor: '#e0e6ef', borderRadius: 9, backgroundColor: '#fff' },
+  assessmentCardHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#e9edf4' },
+  assessmentScore: { fontSize: 25, fontWeight: '900' },
+  assessmentQuestion: { gap: 8, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#edf0f5' },
+  assessmentQuestionText: { color: '#28364b', fontSize: 10, lineHeight: 15, fontWeight: '650' },
+  questionNumber: { color: '#426ee5', fontWeight: '900' },
+  assessmentAnswers: { flexDirection: 'row', justifyContent: 'space-between', gap: 5 },
+  assessmentAnswer: { flex: 1, minHeight: 34, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#dfe5ef', borderRadius: 7, backgroundColor: '#f8f9fc' },
+  assessmentAnswerSelected: { backgroundColor: '#426ee5', borderColor: '#426ee5' },
+  assessmentAnswerText: { color: '#526079', fontSize: 10, fontWeight: '800' },
+  assessmentAnswerTextSelected: { color: '#fff' },
+  assessmentScaleLabels: { flexDirection: 'row', justifyContent: 'space-between' },
+  assessmentScaleText: { color: '#7b8799', fontSize: 7, fontWeight: '800' },
+  assessmentSaveRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingTop: 2 },
+  assessmentNotice: { flex: 1, color: '#6e7b91', fontSize: 8 },
+  assessmentMethod: { color: '#6e7b91', fontSize: 9, lineHeight: 14 },
+  emailPanel: { padding: 13, borderWidth: 1, borderColor: '#e0e6ef', borderRadius: 10, backgroundColor: '#fff', gap: 8 },
+  emailHeader: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#e9edf4' },
+  emailLogo: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#eaf0ff' },
+  emailLogoText: { color: '#426ee5', fontWeight: '900', fontSize: 15 },
+  emailHeaderCopy: { flex: 1 },
+  emailHeaderTitle: { color: '#202a3b', fontSize: 11, fontWeight: '800' },
+  emailButton: { paddingHorizontal: 9, paddingVertical: 7, borderRadius: 7, backgroundColor: '#426ee5' },
+  emailButtonText: { color: '#fff', fontSize: 8, fontWeight: '800' },
+  emailRow: { flexDirection: 'row', gap: 8, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: '#edf0f5' },
+  emailRowUnread: { backgroundColor: '#f6f8fd' },
+  emailUnreadDot: { width: 6, height: 6, marginTop: 4, borderRadius: 4, backgroundColor: '#426ee5' },
+  emailMessageCopy: { flex: 1, gap: 3 },
+  emailMessageTop: { flexDirection: 'row', justifyContent: 'space-between', gap: 6 },
+  emailSender: { flex: 1, color: '#344258', fontSize: 9, fontWeight: '800' },
+  emailDate: { color: '#7b8799', fontSize: 8 },
+  emailSubject: { color: '#202a3b', fontSize: 9, fontWeight: '700' },
+  emailSnippet: { color: '#6e7b91', fontSize: 8, lineHeight: 12 },
+  emailPrivacy: { color: '#6e7b91', fontSize: 8, lineHeight: 12, paddingTop: 5 },
+  scoreHistoryCard: { padding: 13, borderWidth: 1, borderColor: '#e0e6ef', borderRadius: 9, backgroundColor: '#fff', gap: 8 },
+  scoreHistoryRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 7, borderTopWidth: 1, borderTopColor: '#edf0f5' },
+  scoreHistoryCopy: { flex: 1, gap: 2 },
+  scoreHistoryTitle: { color: '#344258', fontSize: 9, fontWeight: '700' },
+  scoreHistoryDelta: { fontSize: 11, fontWeight: '900' },
 });
 
 const darkThemeStyles = StyleSheet.create({
@@ -339,4 +540,52 @@ const darkThemeStyles = StyleSheet.create({
   navSymbol: { color: '#a6b3c8' },
   navLabel: { color: '#a6b3c8' },
   navTextSelected: { color: '#b6caff' },
+  assessmentBanner: { backgroundColor: '#1d2c43', borderColor: '#354761' },
+  assessmentBannerMark: { backgroundColor: '#2d4262' },
+  assessmentBannerTitle: { color: '#e7efff' },
+  assessmentBannerSubtitle: { color: '#a6b3c8' },
+  dimensionHubTabs: { backgroundColor: '#192538' },
+  dimensionHubTabSelected: { backgroundColor: '#2d4262' },
+  dimensionHubTabText: { color: '#a6b3c8' },
+  dimensionHubTabTextSelected: { color: '#e7efff' },
+  priorityCard: { backgroundColor: '#192538', borderColor: '#2d3d55' },
+  priorityHeading: { color: '#f1f5fc' },
+  priorityHelp: { color: '#a6b3c8' },
+  priorityChip: { borderColor: '#354761' },
+  priorityChipText: { color: '#c0cce0' },
+  outcomeDone: { backgroundColor: '#203d3a' },
+  outcomeMissed: { backgroundColor: '#493035' },
+  outcomeButtonText: { color: '#e5edf9' },
+  outcomeNotice: { color: '#9cb7ff' },
+  scheduledLabel: { color: '#a6b3c8' },
+  assessmentProgressCard: { backgroundColor: '#192538', borderColor: '#2d3d55' },
+  assessmentProgressTitle: { color: '#f1f5fc' },
+  assessmentTrack: { backgroundColor: '#354761' },
+  assessmentDimensionButton: { backgroundColor: '#192538', borderColor: '#2d3d55' },
+  assessmentDimensionText: { color: '#e5edf9' },
+  assessmentDimensionScore: { color: '#e5edf9' },
+  assessmentCard: { backgroundColor: '#192538', borderColor: '#2d3d55' },
+  assessmentCardHeading: { borderBottomColor: '#2d3d55' },
+  assessmentQuestion: { borderBottomColor: '#2d3d55' },
+  assessmentQuestionText: { color: '#e5edf9' },
+  assessmentAnswer: { backgroundColor: '#111a28', borderColor: '#354761' },
+  assessmentAnswerText: { color: '#c0cce0' },
+  assessmentScaleText: { color: '#a6b3c8' },
+  assessmentNotice: { color: '#a6b3c8' },
+  assessmentMethod: { color: '#a6b3c8' },
+  emailPanel: { backgroundColor: '#192538', borderColor: '#2d3d55' },
+  emailHeader: { borderBottomColor: '#2d3d55' },
+  emailLogo: { backgroundColor: '#2d4262' },
+  emailLogoText: { color: '#d6e2ff' },
+  emailHeaderTitle: { color: '#f1f5fc' },
+  emailRow: { borderBottomColor: '#2d3d55' },
+  emailRowUnread: { backgroundColor: '#223149' },
+  emailSender: { color: '#e5edf9' },
+  emailDate: { color: '#a6b3c8' },
+  emailSubject: { color: '#f1f5fc' },
+  emailSnippet: { color: '#a6b3c8' },
+  emailPrivacy: { color: '#a6b3c8' },
+  scoreHistoryCard: { backgroundColor: '#192538', borderColor: '#2d3d55' },
+  scoreHistoryRow: { borderTopColor: '#2d3d55' },
+  scoreHistoryTitle: { color: '#e5edf9' },
 });

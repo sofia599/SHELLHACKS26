@@ -1,11 +1,6 @@
-export const DIMENSIONS = [
-  { key: 'physical', label: 'Physical', color: '#e97861', initial: 70 },
-  { key: 'emotional', label: 'Emotional', color: '#9470c0', initial: 60 },
-  { key: 'social', label: 'Social', color: '#388fb9', initial: 65 },
-  { key: 'financial', label: 'Financial', color: '#2c9877', initial: 55 },
-  { key: 'intellectual', label: 'Intellectual', color: '#c29432', initial: 75 },
-  { key: 'occupational', label: 'Occupational', color: '#c85f82', initial: 70 },
-];
+import { DIMENSIONS } from './wellnessModel.js';
+
+export { DIMENSIONS };
 
 const KEYWORDS = {
   physical: ['walk', 'run', 'workout', 'gym', 'exercise', 'yoga', 'swim', 'hike', 'stretch', 'sport', 'sleep', 'meal', 'cook'],

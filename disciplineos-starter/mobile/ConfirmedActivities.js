@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
-import { watchActivities } from './firebase.js';
+import { recordActivityOutcome, watchActivities } from './firebase.js';
 import { DIMENSIONS, localDateKey } from './activityRules.js';
 import { fetchGoogleEvents, syncGoogleActivities } from './googleCalendar.js';
 
@@ -25,6 +25,7 @@ export default function ConfirmedActivities({ styles, googleToken, googleConfigu
   const [googleEvents, setGoogleEvents] = useState([]);
   const [syncing, setSyncing] = useState(false);
   const [googleError, setGoogleError] = useState('');
+  const [outcomeNotice, setOutcomeNotice] = useState('');
 
   useEffect(() => watchActivities((value) => setActivities(value ?? {})), []);
 
@@ -80,6 +81,13 @@ export default function ConfirmedActivities({ styles, googleToken, googleConfigu
     }
   }
 
+  async function recordOutcome(activity, outcome) {
+    const result = await recordActivityOutcome(activity.id, outcome);
+    setOutcomeNotice(result.committed
+      ? `${activity.dimension} ${outcome === 'completed' ? '+4' : '−3'} · score ${result.score}`
+      : 'Outcome already recorded.');
+  }
+
   return (
     <View style={styles.calendarCard}>
       <View style={styles.googleCalendarHeader}>
@@ -128,17 +136,25 @@ export default function ConfirmedActivities({ styles, googleToken, googleConfigu
           <Text style={styles.emptyCopy}>No events on this day.</Text>
         ) : dayEvents.map((event) => {
           const dimension = DIMENSIONS.find((item) => item.key === event.dimension);
+          const activity = event.source !== 'google' ? activities[event.id] : null;
           return (
-            <Pressable key={`${event.source || 'local'}-${event.id}`} onPress={() => event.htmlLink && Linking.openURL(event.htmlLink)} style={styles.activityRow}>
+            <View key={`${event.source || 'local'}-${event.id}`} style={styles.activityRow}>
               <View style={[styles.activityAccent, { backgroundColor: dimension?.color || '#4285f4' }]} />
               <View style={styles.activityCopy}>
                 <Text style={styles.activityTitle}>{event.title}</Text>
-                <Text style={styles.activityMeta}>{event.source === 'google' ? 'Google Calendar' : dimension?.label || 'Confirmed activity'}{event.startTime ? ` · ${new Date(event.startTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : ''}</Text>
+                <Text style={styles.activityMeta}>{activity?.outcome ? `${activity.outcome.status === 'completed' ? 'Completed' : 'Not completed'} · ${activity.outcome.delta > 0 ? '+' : ''}${activity.outcome.delta} pts` : event.source === 'google' ? 'Google Calendar' : dimension?.label || 'Confirmed activity'}{event.startTime ? ` · ${new Date(event.startTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : ''}</Text>
               </View>
-              {event.htmlLink && <Text style={styles.calendarLink}>↗</Text>}
-            </Pressable>
+              {event.htmlLink && <Pressable onPress={() => Linking.openURL(event.htmlLink)}><Text style={styles.calendarLink}>↗</Text></Pressable>}
+              {activity && !activity.outcome && selectedDate <= today && (
+                <View style={styles.outcomeActions}>
+                  <Pressable onPress={() => recordOutcome(activity, 'completed')} style={styles.outcomeDone}><Text style={styles.outcomeButtonText}>Done +4</Text></Pressable>
+                  <Pressable onPress={() => recordOutcome(activity, 'missed')} style={styles.outcomeMissed}><Text style={styles.outcomeButtonText}>Missed −3</Text></Pressable>
+                </View>
+              )}
+            </View>
           );
         })}
+        {!!outcomeNotice && <Text style={styles.outcomeNotice}>{outcomeNotice}</Text>}
       </View>
     </View>
   );

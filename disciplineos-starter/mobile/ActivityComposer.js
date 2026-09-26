@@ -1,23 +1,45 @@
 import { useEffect, useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
-import { addActivity } from './firebase.js';
+import { Alert, Pressable, Text, TextInput, View } from 'react-native';
+import { addActivity, watchActivities } from './firebase.js';
 import { DIMENSIONS, localDateKey, suggestDimension } from './activityRules.js';
+import { recommendDimension } from './wellnessModel.js';
 
-export default function ActivityComposer({ styles, dark = false }) {
+export default function ActivityComposer({ styles, dark = false, scores = {}, priorities = {} }) {
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(() => localDateKey(new Date()));
   const [dimension, setDimension] = useState(null);
   const [saved, setSaved] = useState(false);
+  const [activities, setActivities] = useState({});
   const suggestion = suggestDimension(title);
 
   useEffect(() => {
     setDimension(suggestion);
   }, [suggestion]);
 
+  useEffect(() => watchActivities((value) => setActivities(value ?? {})), []);
+
   async function submit() {
     if (!title.trim() || !dimension || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
-    await addActivity({ title: title.trim(), date, dimension, status: 'pending', createdAt: Date.now() });
+    const overlaps = Object.values(activities).filter((activity) => activity.date === date && activity.dimension !== dimension && activity.status !== 'cancelled');
+    if (overlaps.length) {
+      const candidates = [...new Set([dimension, ...overlaps.map((activity) => activity.dimension)])];
+      const recommended = recommendDimension(scores, priorities, candidates);
+      const recommendedLabel = DIMENSIONS.find((item) => item.key === recommended).label;
+      const overlapSummary = overlaps.map((activity) => `${activity.title} · ${DIMENSIONS.find((item) => item.key === activity.dimension)?.label}`).join('\n');
+      Alert.alert('Schedule overlap', `You already have a plan on this date:\n${overlapSummary}\n\nBased on current scores and priorities, consider ${recommendedLabel}.`, [
+        { text: 'Cancel', style: 'cancel' },
+        ...(recommended !== dimension ? [{ text: `Use ${recommendedLabel}`, onPress: () => addToDimension(recommended) }] : []),
+        { text: `Keep ${DIMENSIONS.find((item) => item.key === dimension).label}`, onPress: () => addToDimension(dimension) },
+      ]);
+      return;
+    }
+    await addToDimension(dimension);
+  }
+
+  async function addToDimension(targetDimension) {
+    await addActivity({ title: title.trim(), date, dimension: targetDimension, status: 'pending', createdAt: Date.now() });
     setTitle('');
+    setDimension(null);
     setSaved(true);
     setTimeout(() => setSaved(false), 2400);
   }
