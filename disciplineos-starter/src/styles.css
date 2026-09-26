@@ -1,0 +1,400 @@
+:root {
+  --bg: #f3f7f2;
+  --surface: #ffffff;
+  --line: #dce7df;
+  --text: #1d3028;
+  --muted: #6d8176;
+
+  --physical: #e85b45;
+  --emotional: #a24bc2;
+  --social: #258fc3;
+  --financial: #15966a;
+  --intellectual: #c18a12;
+  --occupational: #dc4774;
+  --accent: #f1c84b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.85), transparent 58%),
+    repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(29, 48, 40, 0.025) 40px);
+  color: var(--text);
+  font-family: "Inter", sans-serif;
+}
+
+.app-shell {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 40px 20px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(480px, 560px);
+  align-items: start;
+  gap: 24px;
+}
+
+.main-column,
+.side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+h1,
+h2 {
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 600;
+  margin: 0;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 22px;
+  box-shadow: 0 8px 24px rgba(39, 77, 54, 0.045);
+}
+
+.focus-sprint {
+  padding: 15px 20px;
+  border-left: 4px solid var(--accent);
+  background: linear-gradient(110deg, #fff9df, #ffffff 62%);
+}
+
+.sprint-heading {
+  min-height: 28px;
+  margin-bottom: 5px;
+}
+
+.sprint-heading h2 {
+  font-size: 16px !important;
+}
+
+.sprint-heading .muted {
+  font-size: 12px !important;
+}
+
+.sprint-timer {
+  margin-bottom: 8px;
+  font-size: 36px;
+  line-height: 1.1;
+  color: #253f33;
+}
+
+.focus-sprint .row:has(+ p) {
+  gap: 8px !important;
+}
+
+.focus-sprint button {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.focus-sprint p {
+  margin: 8px 0 0 !important;
+  font-size: 12px !important;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+button {
+  font-family: "Inter", sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #f7faf7;
+  color: var(--text);
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+button.primary {
+  background: #d9f05a;
+  color: #203321;
+  border-color: transparent;
+}
+
+button.primary:hover {
+  background: #cbe641;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+textarea,
+input[type="text"] {
+  font-family: "Inter", sans-serif;
+  background: #fbfdfb;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+  padding: 10px 12px;
+  width: 100%;
+}
+
+.wellness-calendar {
+  padding: 20px;
+}
+
+.calendar-heading,
+.calendar-controls,
+.checkin-title,
+.score-control > span {
+  display: flex;
+  align-items: center;
+}
+
+.calendar-heading {
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.eyebrow {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin: 0 0 5px;
+}
+
+.calendar-heading h2 {
+  font-size: 19px;
+}
+
+.calendar-month-count {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.dimension-picker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+button.dimension-choice {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 8px 7px;
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+button.dimension-choice.is-active {
+  color: var(--text);
+  border-color: var(--dimension-color);
+  background: color-mix(in srgb, var(--dimension-color) 12%, var(--surface));
+}
+
+.dimension-dot {
+  display: inline-block;
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dimension-color);
+}
+
+.calendar-controls {
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.calendar-controls h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+}
+
+button.calendar-arrow {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 8px;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.calendar-weekday {
+  display: grid;
+  place-items: center;
+  height: 26px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.calendar-empty,
+button.calendar-day {
+  aspect-ratio: 1;
+  min-width: 0;
+}
+
+button.calendar-day {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-color: transparent;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+button.calendar-day:hover {
+  background: #eef5ee;
+}
+
+button.calendar-day.is-today {
+  border-color: var(--line);
+}
+
+button.calendar-day.is-selected {
+  border-color: var(--dimension-color);
+  background: color-mix(in srgb, var(--dimension-color) 17%, var(--surface));
+  color: var(--text);
+}
+
+.calendar-day-mark {
+  position: absolute;
+  bottom: 4px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--dimension-color);
+}
+
+.checkin-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.checkin-title {
+  gap: 9px;
+}
+
+.checkin-title > div {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.checkin-title strong {
+  font-size: 13px;
+}
+
+.checkin-title .muted {
+  font-size: 11px;
+}
+
+.saved-score {
+  color: var(--dimension-color);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.score-control {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.score-control > span {
+  justify-content: space-between;
+  color: var(--muted);
+}
+
+.score-control > span strong {
+  color: var(--text);
+}
+
+.score-control input[type="range"] {
+  width: 100%;
+  accent-color: var(--dimension-color);
+}
+
+button.save-checkin {
+  width: 100%;
+  border-radius: 8px;
+}
+
+@media (max-width: 1000px) {
+  .dashboard-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .side-column {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+@media (max-width: 620px) {
+  .app-shell {
+    padding: 28px 14px 56px;
+    gap: 22px;
+  }
+
+  .side-column {
+    display: flex;
+  }
+
+  .panel {
+    padding: 18px;
+  }
+
+  .focus-sprint {
+    padding: 14px 16px;
+  }
+
+  .sprint-timer {
+    font-size: 32px;
+  }
+}
