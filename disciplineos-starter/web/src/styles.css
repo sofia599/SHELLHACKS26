@@ -1,121 +1,128 @@
 :root {
-  --bg: #fbf5fa;
-  --surface: #ffffff;
-  --line: #eadce9;
-  --text: #302238;
-  --muted: #806f87;
-
-  --physical: #e85b45;
-  --emotional: #a24bc2;
-  --social: #258fc3;
-  --financial: #15966a;
-  --intellectual: #c18a12;
-  --occupational: #dc4774;
-  --accent: #f05ba8;
-  --accent-cool: #70dce8;
-  --chart-fill: #f05ba8;
-  --chart-stroke: #dc51a0;
-  --chart-point-outline: #fff8fd;
+	--bg: #f5f7fb;
+	--surface: #ffffff;
+	--line: #e0e6ef;
+	--text: #202a3b;
+	--muted: #6e7b91;
+  --physical: #e97861;
+  --emotional: #9470c0;
+  --social: #388fb9;
+  --financial: #2c9877;
+  --intellectual: #c29432;
+  --occupational: #c85f82;
+	--accent: #426ee5;
+	--accent-cool: #42b9c9;
+	--chart-fill: #426ee5;
+	--chart-stroke: #426ee5;
+	--chart-point-outline: #ffffff;
 }
 
 * {
-  box-sizing: border-box;
+	box-sizing: border-box;
 }
 
 body {
-  margin: 0;
-  background-color: var(--bg);
-  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.88), transparent 58%),
-    repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(105, 61, 112, 0.035) 40px);
-  color: var(--text);
-  font-family: "Inter", sans-serif;
+	min-width: 320px;
+	margin: 0;
+	background-color: var(--bg);
+	background-image: radial-gradient(ellipse at 78% 0%, rgba(207, 224, 255, 0.46), transparent 46%), linear-gradient(135deg, rgba(255, 255, 255, 0.94), transparent 55%);
+	color: var(--text);
+	font-family: "Manrope", sans-serif;
 }
 
 .app-shell {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 40px 20px 80px;
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
+	max-width: 1280px;
+	margin: 0 auto;
+	padding: 40px 20px 80px;
+	display: flex;
+	flex-direction: column;
+	gap: 28px;
 }
 
 .dashboard-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(480px, 560px);
-  align-items: start;
-  gap: 24px;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(480px, 560px);
+	align-items: start;
+	gap: 24px;
 }
 
 .main-column,
 .side-column {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+	min-width: 0;
 }
 
 h1,
 h2 {
-  font-family: "Space Grotesk", sans-serif;
-  font-weight: 600;
-  margin: 0;
+	font-family: "Space Grotesk", sans-serif;
+	font-weight: 600;
+	margin: 0;
 }
 
 .panel {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 22px;
-  box-shadow: 0 8px 24px rgba(39, 77, 54, 0.045);
+	background: var(--surface);
+	border: 1px solid var(--line);
+	border-radius: 10px;
+	padding: 22px;
+	box-shadow: 0 8px 24px rgba(39, 54, 79, 0.05);
 }
 
 .muted {
-  color: var(--muted);
+	color: var(--muted);
 }
 
 .row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
 }
 
 button {
-  font-family: "Inter", sans-serif;
-  font-weight: 600;
-  font-size: 14px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: #f7faf7;
-  color: var(--text);
-  padding: 10px 16px;
-  cursor: pointer;
+	font-family: "Manrope", sans-serif;
+	font-weight: 600;
+	font-size: 14px;
+	border-radius: 8px;
+	border: 1px solid var(--line);
+	background: #f7f9fc;
+	color: var(--text);
+	padding: 10px 16px;
+	cursor: pointer;
 }
 
 button.primary {
-  background: linear-gradient(105deg, #f05ba8, #d978d3);
-  color: #fff;
-  border-color: transparent;
+	background: var(--accent);
+	color: #fff;
+	border-color: transparent;
 }
 
 button.primary:hover {
-  background: linear-gradient(105deg, #e94e9d, #c967c7);
+	background: #345bc5;
 }
 
 button:disabled {
-  opacity: 0.5;
-  cursor: default;
+	opacity: 0.5;
+	cursor: default;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 42%, transparent);
+  outline-offset: 2px;
 }
 
 textarea,
 input[type="text"] {
-  font-family: "Inter", sans-serif;
-  background: #fbfdfb;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  color: var(--text);
-  padding: 10px 12px;
-  width: 100%;
+	font-family: "Manrope", sans-serif;
+	background: #fbfcfe;
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	color: var(--text);
+	padding: 10px 12px;
+	width: 100%;
 }
 
 .wellness-calendar {
@@ -381,8 +388,8 @@ body {
   place-items: center;
   flex: 0 0 auto;
   border-radius: 11px;
-  background: #d9f05a;
-  color: #26382c;
+  background: #dfe8ff;
+  color: #3459b5;
   font-weight: 800;
 }
 
@@ -407,20 +414,20 @@ body {
 button.rail-link {
   padding: 11px 10px;
   border-radius: 9px;
-  color: #65776d;
+  color: #526079;
   font-size: 13px;
 }
 
 button.rail-link > span {
   width: 20px;
-  color: #648274;
+  color: #71819a;
   font-size: 17px;
   text-align: center;
 }
 
 button.rail-link.is-active {
-  background: #eaf4e7;
-  color: #234834;
+  background: #eaf0ff;
+  color: #3459b5;
 }
 
 .rail-footer {
@@ -436,7 +443,7 @@ button.rail-link.is-active {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: #dceef5;
+  background: #e4edf8;
 }
 
 .rail-footer > span:last-child {
@@ -459,9 +466,13 @@ button.rail-link.is-active {
 }
 
 .screen-content {
-  width: min(1440px, 100%);
+  width: min(1380px, 100%);
   margin: 0 auto;
-  padding: 38px clamp(22px, 4vw, 64px) 72px;
+  padding: 34px clamp(24px, 4vw, 64px) 72px;
+}
+
+.home-screen {
+  max-width: 1120px;
 }
 
 .screen-heading {
@@ -495,9 +506,9 @@ button.rail-link.is-active {
 .home-top-grid {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 14px;
-  margin-bottom: 22px;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 26px;
 }
 
 .home-top-grid > .panel {
@@ -509,15 +520,15 @@ button.rail-link.is-active {
 .home-top-grid > .wellness-embedded,
 .home-top-grid > .activity-composer {
   width: 100%;
-  max-width: 590px;
+  max-width: 720px;
 }
 
 .activity-composer {
-  padding: 13px 16px !important;
-  border: 1px solid #eed8e9;
+  padding: 12px 15px !important;
+  border: 1px solid #dce5f2;
   border-top: 3px solid var(--accent);
-  border-radius: 14px;
-  background: linear-gradient(120deg, rgba(255, 232, 246, 0.72), var(--surface) 55%);
+  border-radius: 10px;
+  background: linear-gradient(120deg, rgba(231, 239, 255, 0.68), var(--surface) 55%);
 }
 
 .activity-composer-heading,
@@ -538,7 +549,7 @@ button.rail-link.is-active {
 }
 
 .activity-kicker {
-  color: #ad6a9f;
+  color: #6075ad;
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.8px;
@@ -584,7 +595,7 @@ button.rail-link.is-active {
   min-width: 0;
   padding: 5px 8px;
   border-radius: 8px;
-  background: rgba(240, 91, 168, 0.08);
+  background: #f1f5fb;
 }
 
 .activity-classification .dimension-dot {
@@ -667,7 +678,8 @@ button.dimension-chip.is-active {
 }
 
 .wellness-embedded > svg {
-  filter: drop-shadow(0 10px 18px rgba(220, 81, 160, 0.12));
+  max-width: 560px !important;
+  filter: drop-shadow(0 10px 18px rgba(51, 99, 189, 0.1));
 }
 
 .appearance-setting {
@@ -709,32 +721,45 @@ button.dimension-chip.is-active {
 .appearance-switch button.is-active {
   background: var(--surface);
   color: var(--text);
-  box-shadow: 0 2px 8px rgba(80, 35, 80, 0.1);
+  box-shadow: 0 2px 8px rgba(34, 54, 91, 0.1);
 }
 
 .app-frame[data-theme="dark"] {
-  --bg: #15101d;
-  --surface: #211a2b;
-  --line: #40334c;
-  --text: #f7eefb;
-  --muted: #b7a6bf;
-  --physical: #ff8b78;
-  --emotional: #db92ff;
-  --social: #73d9f2;
-  --financial: #72e3b1;
-  --intellectual: #f4d078;
-  --occupational: #ff7db6;
-  --accent: #ff72b8;
-  --accent-cool: #70dce8;
-  --chart-fill: #ff72b8;
-  --chart-stroke: #ff97cb;
-  --chart-point-outline: #211a2b;
-  background-color: var(--bg);
-  background-image: repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(237, 178, 255, 0.035) 40px);
+  --bg: #111a28;
+  --surface: #192538;
+  --line: #2d3d55;
+  --text: #f1f5fc;
+  --muted: #a6b3c8;
+  --physical: #ff9c84;
+  --emotional: #c5a4ed;
+  --social: #77c9ed;
+  --financial: #75d9ae;
+  --intellectual: #f0cd7e;
+  --occupational: #f48bad;
+  --accent: #82a4ff;
+  --accent-cool: #52c8d5;
+  --chart-fill: #658cf1;
+  --chart-stroke: #82a4ff;
+  --chart-point-outline: #192538;
+  background-color: #111a28 !important;
+  color: #f1f5fc !important;
+  background-image: radial-gradient(ellipse at 78% 0%, rgba(50, 83, 143, 0.24), transparent 48%);
+}
+
+.app-frame[data-theme="dark"] .app-main,
+.app-frame[data-theme="dark"] .screen-content {
+  color: #f1f5fc;
+}
+
+.app-frame[data-theme="dark"] .screen-heading h1,
+.app-frame[data-theme="dark"] .home-heading h1,
+.app-frame[data-theme="dark"] .profile-hero h2,
+.app-frame[data-theme="dark"] .appearance-setting h2 {
+  color: #f1f5fc;
 }
 
 .app-frame[data-theme="dark"] .desktop-rail {
-  background: rgba(29, 22, 39, 0.95);
+  background: rgba(19, 29, 45, 0.96);
 }
 
 .app-frame[data-theme="dark"] .panel,
@@ -746,8 +771,8 @@ button.dimension-chip.is-active {
 }
 
 .app-frame[data-theme="dark"] .activity-composer {
-  background: linear-gradient(120deg, #302036, var(--surface) 70%);
-  border-color: #584052;
+  background: linear-gradient(120deg, #202f49, var(--surface) 70%);
+  border-color: var(--line);
   border-top-color: var(--accent);
 }
 
@@ -756,31 +781,31 @@ button.dimension-chip.is-active {
 .app-frame[data-theme="dark"] .dimension-overview.is-active,
 .app-frame[data-theme="dark"] button.calendar-day,
 .app-frame[data-theme="dark"] .appearance-switch {
-  background-color: #2c2237;
+  background-color: #223149;
 }
 
 .app-frame[data-theme="dark"] input,
 .app-frame[data-theme="dark"] textarea,
 .app-frame[data-theme="dark"] .appearance-switch button.is-active {
-  background-color: #17121f;
+  background-color: #111a28;
   border-color: var(--line);
   color: var(--text);
 }
 
 .app-frame[data-theme="dark"] button.primary {
-  background: linear-gradient(105deg, #f05ba8, #ac70e4);
+  background: var(--accent);
   color: #fff;
   border-color: transparent;
 }
 
 .app-frame[data-theme="dark"] .rail-link.is-active,
 .app-frame[data-theme="dark"] button.calendar-day.is-selected {
-  background: #3b2946;
+  background: #2d4262;
   color: #fff;
 }
 
 .app-frame[data-theme="dark"] .profile-hero {
-  background: linear-gradient(110deg, #38243d, #211a2b 74%);
+  background: linear-gradient(110deg, #243652, #192538 74%);
 }
 
 .app-frame[data-theme="dark"] .home-screen .confirmed-calendar {
@@ -791,7 +816,7 @@ button.dimension-chip.is-active {
 .app-frame[data-theme="dark"] .activity-classification,
 .app-frame[data-theme="dark"] .dimension-overview.is-active,
 .app-frame[data-theme="dark"] button.calendar-day {
-  background: #2c2237;
+  background: #223149;
 }
 
 .app-frame[data-theme="dark"] button.dimension-chip,
@@ -807,17 +832,17 @@ button.dimension-chip.is-active {
 .app-frame[data-theme="dark"] .activity-kicker,
 .app-frame[data-theme="dark"] .rail-caption,
 .app-frame[data-theme="dark"] .rail-footer small {
-  color: #d1a5cb;
+  color: #b4c6e8;
 }
 
 .app-frame[data-theme="dark"] .calendar-day:hover,
 .app-frame[data-theme="dark"] button.calendar-day:hover {
-  background: #382942;
+  background: #2a3a54;
 }
 
 .app-frame[data-theme="dark"] .main-calendar-day.is-selected {
-  background: #57314f;
-  border-color: #ff72b8;
+  background: #2d4262;
+  border-color: #82a4ff;
 }
 
 .app-frame[data-theme="dark"] .activity-accent {
@@ -826,13 +851,13 @@ button.dimension-chip.is-active {
 
 .app-frame[data-theme="dark"] .empty-mark,
 .app-frame[data-theme="dark"] .brand-mark {
-  background: #58324f;
-  color: #ffd8ed;
+  background: #2e4771;
+  color: #e8efff;
 }
 
 .app-frame[data-theme="dark"] .appearance-switch button.is-active {
-  background: #57314f;
-  color: #ffe3f2;
+  background: #2d4262;
+  color: #f1f5fc;
 }
 
 .app-frame,
@@ -977,7 +1002,7 @@ button.main-calendar-day.is-today {
   min-height: 88px;
   padding: 17px;
   border-radius: 9px;
-  background: #f7faf6;
+  background: #f5f7fb;
 }
 
 .empty-mark {
@@ -987,8 +1012,8 @@ button.main-calendar-day.is-today {
   width: 37px;
   height: 37px;
   border-radius: 12px;
-  background: #e8f1e7;
-  color: #5b8267;
+  background: #eaf0ff;
+  color: #426ee5;
   font-size: 21px;
 }
 
@@ -1016,7 +1041,7 @@ button.main-calendar-day.is-today {
   gap: 12px;
   min-height: 62px;
   padding: 11px 3px;
-  border-top: 1px solid #edf1ed;
+  border-top: 1px solid #e9edf4;
 }
 
 .activity-accent {
@@ -1052,8 +1077,8 @@ button.main-calendar-day.is-today {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: #e5f3e8;
-  color: #398154;
+  background: #e5f4ed;
+  color: #24835f;
   font-size: 13px;
   font-weight: 800;
 }
@@ -1106,14 +1131,14 @@ button.dimension-overview.is-active {
   align-items: center;
   gap: 18px;
   margin-bottom: 16px;
-  background: linear-gradient(110deg, #e8f3e6, #fff 74%);
+  background: linear-gradient(110deg, #eaf0ff, #fff 74%);
 }
 
 .profile-avatar-large {
   width: 62px;
   height: 62px;
   border-radius: 19px;
-  background: #d9eaf0;
+  background: #dce8ff;
   font-size: 26px;
 }
 
@@ -1238,17 +1263,17 @@ button.dimension-overview.is-active {
 }
 
 .app-frame[data-theme="dark"] .main-calendar-day {
-  background: #2c2237;
+  background: #223149;
   color: var(--text);
 }
 
 .app-frame[data-theme="dark"] .main-calendar-day.is-selected {
-  background: #57314f;
+  background: #2d4262;
 }
 
 .app-frame[data-theme="dark"] .profile-avatar-large {
-  background: #593550;
-  color: #ffd9ef;
+  background: #2e4771;
+  color: #e8efff;
 }
 
 .app-frame[data-theme="dark"] .activity-composer-heading h2,
@@ -1271,7 +1296,7 @@ button.dimension-overview.is-active {
 }
 
 .app-frame[data-theme="dark"] .dimension-chip {
-  background: #211a2b;
+  background: #192538;
 }
 
 .app-frame[data-theme="dark"] .activity-quick-row input[type="date"] {

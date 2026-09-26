@@ -1,10 +1,10 @@
 export const DIMENSIONS = [
-  { key: 'physical', label: 'Physical', color: '#e85b45', initial: 70 },
-  { key: 'emotional', label: 'Emotional', color: '#a24bc2', initial: 60 },
-  { key: 'social', label: 'Social', color: '#258fc3', initial: 65 },
-  { key: 'financial', label: 'Financial', color: '#15966a', initial: 55 },
-  { key: 'intellectual', label: 'Intellectual', color: '#c18a12', initial: 75 },
-  { key: 'occupational', label: 'Occupational', color: '#dc4774', initial: 70 },
+  { key: 'physical', label: 'Physical', color: '#e97861', initial: 70 },
+  { key: 'emotional', label: 'Emotional', color: '#9470c0', initial: 60 },
+  { key: 'social', label: 'Social', color: '#388fb9', initial: 65 },
+  { key: 'financial', label: 'Financial', color: '#2c9877', initial: 55 },
+  { key: 'intellectual', label: 'Intellectual', color: '#c29432', initial: 75 },
+  { key: 'occupational', label: 'Occupational', color: '#c85f82', initial: 70 },
 ];
 
 const KEYWORDS = {

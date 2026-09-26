@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import { addActivity } from './firebase.js';
 import { DIMENSIONS, localDateKey, suggestDimension } from './activityRules.js';
 
@@ -33,7 +33,7 @@ export default function ActivityComposer({ styles, dark = false }) {
           value={title}
           onChangeText={setTitle}
           placeholder="What are you planning?"
-          placeholderTextColor={dark ? '#b7a6bf' : '#84948a'}
+          placeholderTextColor={dark ? '#a6b3c8' : '#6e7b91'}
           maxLength={100}
           style={[styles.activityInput, styles.activityTitleInput]}
         />
@@ -46,12 +46,12 @@ export default function ActivityComposer({ styles, dark = false }) {
         />
       </View>
       <View style={styles.suggestionRow}>
-        <View style={[styles.dimensionDot, { backgroundColor: DIMENSIONS.find((item) => item.key === dimension)?.color || '#f05ba8' }]} />
+        <View style={[styles.dimensionDot, { backgroundColor: DIMENSIONS.find((item) => item.key === dimension)?.color || '#426ee5' }]} />
         <Text style={styles.suggestionValue}>
           {dimension ? `${DIMENSIONS.find((item) => item.key === dimension).label}${suggestion ? ' · suggested' : ''}` : 'Choose below'}
         </Text>
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dimensionChips}>
+      <View style={styles.dimensionChips}>
         {DIMENSIONS.map((item) => (
           <Pressable
             key={item.key}
@@ -62,7 +62,7 @@ export default function ActivityComposer({ styles, dark = false }) {
             <Text style={styles.dimensionText}>{item.label}</Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </View>
       <View style={styles.activityFooter}>
         <Text style={styles.pendingNote}>Pending review</Text>
         <Pressable disabled={!title.trim() || !dimension} onPress={submit} style={[styles.smallAction, (!title.trim() || !dimension) && styles.disabledAction]}>

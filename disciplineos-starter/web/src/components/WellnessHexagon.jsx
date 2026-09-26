@@ -19,10 +19,10 @@ const DEFAULTS = {
   occupational: 70,
 };
 
-const CX = 210,
-  CY = 210,
-  R = 150,
-  LABEL_R = 185;
+const CX = 260,
+  CY = 218,
+  R = 136,
+  LABEL_R = 190;
 const N = DIMENSION_META.length;
 
 function pointAt(index, radiusFrac) {
@@ -69,7 +69,7 @@ export default function WellnessHexagon() {
         <div className="muted" style={{ fontSize: 13 }}>overall wellness score</div>
       </div>
 
-      <svg viewBox="0 0 420 420" style={{ width: "100%", maxWidth: 420 }}>
+      <svg viewBox="0 0 520 440" style={{ width: "100%", maxWidth: 640 }}>
         {rings.map((f, ri) => (
           <polygon
             key={ri}
